@@ -19,3 +19,4 @@ Route::post('/editCustomer/{id}',[PartnerController::class,'editCustomer']);
 // referralLink
 
 Route::get('/referralLink/{uuid}',[PartnerController::class,'referralLink']);
+Route::post('/createCustomer',[PartnerController::class,'createCustomer']);

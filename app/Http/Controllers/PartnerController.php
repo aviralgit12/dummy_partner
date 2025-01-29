@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Session;
 use Pest\ArchPresets\Custom;
 
 class PartnerController extends Controller
@@ -131,6 +132,7 @@ class PartnerController extends Controller
             if (password_verify($password, $user->password)) {
                 $tokenResult = $user->createToken('pet-shop-token')->plainTextToken;
                 $accessToken = $tokenResult;
+                Session::put('auth_token', $accessToken);
                 return response()->json([
                     'success' => true,
                     'token'=>$accessToken,
