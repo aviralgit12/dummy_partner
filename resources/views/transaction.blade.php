@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Customer List</title>
+    <title>Transaction Log</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -16,11 +16,11 @@
     <div class="container mx-auto px-4 py-8">
         <!-- Header with Create Button -->
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">Customer List</h1>
-            <button onclick="openModal('create')"
+            <h1 class="text-2xl font-bold">Transaction Log</h1>
+            <!-- <button onclick="openModal('create')"
                 class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                Create Customer
-            </button>
+                Upload
+            </button> -->
         </div>
 
         <!-- Users Table -->
@@ -30,9 +30,9 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pet Points</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Points</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UUID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Time</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="userTableBody">
@@ -102,12 +102,8 @@
                         <label for="uuid" class="block text-sm font-medium text-gray-700 mb-1">UUID</label>
                         <div class="flex gap-2">
                             <input type="text" id="uuid" required
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 bg-gray-50"
-                                readonly>
-                            <button id="generate_uuid" type="button" onclick="generateUUID()"
-                                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-200 transition duration-150">
-                                Generate
-                            </button>
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ">
+
                         </div>
                     </div>
 
@@ -153,7 +149,7 @@
 
         async function fetchUsers() {
             const token = "<?php echo (session('auth_token')); ?>";
-            const response = await fetch('/api/getAllCustomer', {
+            const response = await fetch('/api/getAllTransaction', {
                 method: 'get',
                 headers: {
                     'Content-Type': 'application/json',
@@ -168,32 +164,34 @@
         // Display users in table
         function displayUsers(users) {
             const tableBody = document.getElementById('userTableBody');
-            tableBody.innerHTML = users.map(user => `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${user.first_name} ${user.last_name}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${user.email}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${user.pet_point.toFixed(2)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${user.uuid}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button onclick='openModal("edit", ${JSON.stringify(user).replace(/'/g, "&apos;")})' 
-                            class="text-indigo-600 hover:text-indigo-900 mr-4">
-                            Edit
-                        </button>
-                        <button onclick="redirectToShop('${user.uuid}')"
-                            class="text-green-600 hover:text-green-900">
-                            Shop Now
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            tableBody.innerHTML = users.map(user => {
+                let createdAt = new Date(user.created_at);
+                let hours = createdAt.getHours();
+                let ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                let formattedDate = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}-${String(createdAt.getDate()).padStart(2, '0')} ` +
+                    `${String(hours).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}:${String(createdAt.getSeconds()).padStart(2, '0')} ${ampm}`;
+
+                return `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+                ${user.first_name} ${user.last_name}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                ${user.email}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                ${user.pet_point.toFixed(2)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                ${user.uuid}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                ${formattedDate}
+            </td>
+        </tr>
+    `;
+            }).join('');
         }
 
         // Modal functions
@@ -205,25 +203,22 @@
             const submitButton = document.getElementById('submitButton');
 
             if (isCreateMode) {
-                modalTitle.textContent = 'Create User';
-                modalSubtitle.textContent = 'Enter new user information';
-                submitButton.textContent = 'Create User';
-                document.getElementById('generate_uuid').hidden=false;
+                modalTitle.textContent = 'Upload';
+                modalSubtitle.textContent = 'Enter user information';
+                submitButton.textContent = 'Upload';
+
                 // Clear form
                 document.getElementById('userForm').reset();
-                // Generate new UUID
-                generateUUID();
             } else {
                 modalTitle.textContent = 'Edit User';
                 modalSubtitle.textContent = 'Update user information';
                 submitButton.textContent = 'Save Changes';
-                document.getElementById('generate_uuid').hidden=true;
                 // Fill form with user data
                 document.getElementById('userId').value = user.id;
                 document.getElementById('firstName').value = user.first_name;
                 document.getElementById('lastName').value = user.last_name;
                 document.getElementById('email').value = user.email;
-                document.getElementById('petPoints').value = user.pet_point;
+                document.getElementById('petPoints').value = user.pet_points;
                 document.getElementById('uuid').value = user.uuid;
             }
 
@@ -261,7 +256,7 @@
             if (isCreateMode) {
                 // Handle Create
                 const token = "<?php echo (session('auth_token')); ?>";
-                const response = await fetch('/api/createCustomer', {
+                const response = await fetch('/api/uploadUserPetPoints', {
                     method: 'post',
                     headers: {
                         'Content-Type': 'application/json',
@@ -275,7 +270,7 @@
             } else {
                 // Handle Edit api
                 const userId = document.getElementById('uuid').value;
-                    const token = "<?php echo (session('auth_token')); ?>";
+                const token = "<?php echo (session('auth_token')); ?>";
                 const response = await fetch(`/api/editCustomer/${userId}`, {
                     method: 'post',
                     headers: {
@@ -290,8 +285,8 @@
                 //         ...dummyUsers[userIndex],
                 //         ...userData
                 //     };
-                    showNotification('User updated successfully!');
-                
+                showNotification('User updated successfully!');
+
             }
 
             closeModal();
@@ -324,7 +319,7 @@
     </script>
     @else
     <script type="text/javascript">
-        window.location.href = "/"; 
+        window.location.href = "/";
         // Redirect to the login page
     </script>
     @endif

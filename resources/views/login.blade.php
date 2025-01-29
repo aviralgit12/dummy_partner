@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Partner Login</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,6 +16,7 @@
         }
     </style>
 </head>
+
 <body class="bg-gray-100">
     <div class="login-container flex items-center justify-center">
         <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
@@ -21,7 +24,7 @@
                 <h1 class="text-2xl font-bold text-gray-800"> Login</h1>
                 <p class="text-gray-600 mt-2">Welcome back! Please login to continue</p>
             </div>
-            
+
             <!-- Login Form -->
             <form id="loginForm" class="space-y-6">
                 <div>
@@ -62,12 +65,12 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
-              console.log('Hello from');
-              
+            console.log('Hello from');
+
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
@@ -81,16 +84,33 @@
                 });
 
                 const data = await response.json();
+                console.log(data, "data");
 
-                console.log(data,"data");
-                
 
                 if (response.ok) {
                     // Success - you can redirect to the main website here
                     // For example: window.location.href = 'https://mainwebsite.com?token=' + data.token;
                     console.log('Login successful:', data);
-                    
-                    window.location.href = '/all-users';
+                    fetch('/store-token', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                auth_token: data.token
+                            }), // Sending the token
+                        })
+                        .then(response => response.json()) // Parse the JSON response
+                        .then(data => {
+                            console.log('Token stored in session:', data);
+                            window.location.href = '/all-users';
+
+                        })
+                        .catch(error => {
+                            console.error('Error storing token:', error);
+                        });
+
                 } else {
                     // Show error message
                     errorMessage.textContent = data.message || 'Login failed. Please try again.';
@@ -104,4 +124,5 @@
         });
     </script>
 </body>
+
 </html>
