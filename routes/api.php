@@ -10,3 +10,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/uploadUserPetPoints',[PartnerController::class,'uploadUserPetPoints']);
 // getCustomer
 Route::get('/getCustomer/{id}',[PartnerController::class,'getCustomer']);
+Route::get('/getAllCustomer',[PartnerController::class,'getAllCustomer']);
+// loginUser
+Route::post('/login',[PartnerController::class,'loginUser']);
+

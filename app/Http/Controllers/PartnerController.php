@@ -47,13 +47,13 @@ class PartnerController extends Controller
             "pet_points" => $pet_points,
             "uuid" => $uuid
         ];
-        $customer = new Customer();
-        $customer->first_name = $first_name;
-        $customer->last_name = $last_name;
-        $customer->email = $email;
-        $customer->pet_points = $pet_points;
-        $customer->uuid = $uuid;
-        $customer->save();
+        // $customer = new Customer();
+        // $customer->first_name = $first_name;
+        // $customer->last_name = $last_name;
+        // $customer->email = $email;
+        // $customer->pet_points = $pet_points;
+        // $customer->uuid = $uuid;
+        // $customer->save();
         if (!$petPointSecretKey || !$petPointSecretId) {
             return response()->json([
                 'success' => false,
@@ -93,7 +93,6 @@ class PartnerController extends Controller
         // If all requests succeed, send a success response
         return response()->json([
             'success' => true,
-            'customer'=>$customer,
             'message' => 'Uploaded successfully',
         ], 200);
     }
@@ -130,8 +129,11 @@ class PartnerController extends Controller
         $user = User::where('email', $email)->first();
         if ($user) {
             if (password_verify($password, $user->password)) {
+                $tokenResult = $user->createToken('pet-shop-token')->plainTextToken;
+                $accessToken = $tokenResult;
                 return response()->json([
                     'success' => true,
+                    'token'=>$accessToken,
                     'message' => 'Login successfully',
                     'data' => $user
                 ], 200);
@@ -152,6 +154,19 @@ class PartnerController extends Controller
     public function getCustomer($id)
     {
         $customer = Customer::where('id', $id)->first();
+        if ($customer) {
+            return response()->json([
+                'success' => true,
+                'message' => 'data found',
+                'data' => $customer
+
+            ], 200);
+        }
+    }
+
+    public function getAllCustomer()
+    {
+        $customer = Customer::get();
         if ($customer) {
             return response()->json([
                 'success' => true,
