@@ -201,4 +201,35 @@ class PartnerController extends Controller
             ], 200);
         }
     }
+
+    public function editCustomer(Request $request,$id){
+        $first_name = $request->first_name;
+        $last_name = $request->last_name;
+        $email = $request->email;
+        $pet_points = $request->pet_points;
+        $uuid = $request->uuid;
+        $customer = Customer::where('id',$id)->first();
+        if ($customer) {
+        $customer->first_name = $first_name;
+        $customer->last_name = $last_name;
+        $customer->email = $email;
+        $customer->pet_point = $pet_points;
+        $customer->uuid = $uuid;
+        $customer->save();
+        return response()->json([
+            'success' => true,
+            'message' => 'Updated Successfully',
+    
+        ], 200);
+        }else{
+            return response()->json([
+                'success' => false,
+                'message' => 'No customer found',
+        
+            ], 200);
+        }
+
+            
+        
+    }
 }

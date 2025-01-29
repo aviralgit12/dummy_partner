@@ -13,4 +13,7 @@ Route::get('/getCustomer/{id}',[PartnerController::class,'getCustomer']);
 Route::get('/getAllCustomer',[PartnerController::class,'getAllCustomer']);
 // loginUser
 Route::post('/login',[PartnerController::class,'loginUser']);
+// editCustomer
+
+Route::post('/editCustomer/{id}',[PartnerController::class,'editCustomer']);
 
