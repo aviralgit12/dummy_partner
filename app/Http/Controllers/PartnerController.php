@@ -227,9 +227,52 @@ class PartnerController extends Controller
                 'message' => 'No customer found',
         
             ], 200);
-        }
+        }         
+    }
 
-            
-        
+    public function referralLink(Request $request, $uuid)
+    {
+        try {
+            $petPointSecretKey = $this->pet_point_secret_key;
+            $petPointSecretId = $this->pet_point_secret_id;
+            $petPointSandBoxUrl = $this->pet_point_sandbox_url;
+    
+            // Get the server's IP address
+            $serverIp = request()->ip();
+            // Define headers
+            $headers = [
+                'Content-Type' => 'application/json',
+                'pet_point_secret_key' => $petPointSecretKey,
+                'pet_point_secret_id' => $petPointSecretId,
+            ];
+
+            // Define request payload
+            $data = [
+                'ip_address' => $serverIp,
+                'uuid' => $uuid,
+            ];
+
+            // Send POST request
+            $response = Http::withHeaders($headers)
+                ->post("$petPointSandBoxUrl/api/petshop/referralLink", $data);
+
+            // Check if the request was successful
+            if ($response->successful()) {
+                return redirect($response->json());
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed',
+                'error'=>$response
+            ], 500);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save user pet points.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
