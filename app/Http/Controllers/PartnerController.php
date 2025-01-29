@@ -20,9 +20,9 @@ class PartnerController extends Controller
         $this->pet_point_secret_key = config("app.pet_point_secret_key");
         $this->pet_point_secret_id = config("app.pet_point_secret_id");
         $this->pet_point_sandbox_url = config("app.pet_point_sandbox_url");
-
     }
-    public function createCsrfToken(Request $request){
+    public function createCsrfToken(Request $request)
+    {
         $token = csrf_token();
         return $token;
     }
@@ -40,14 +40,21 @@ class PartnerController extends Controller
         $email = $request->email;
         $pet_points = $request->pet_points;
         $uuid = $request->uuid; // Assuming 'data' is sent in the request body
-        $data=[
-            "first_name"=>$first_name,
-            "last_name"=>$last_name,
-            "email"=>$email,
-            "pet_points"=>$pet_points,
-            "uuid"=>$uuid
+        $data = [
+            "first_name" => $first_name,
+            "last_name" => $last_name,
+            "email" => $email,
+            "pet_points" => $pet_points,
+            "uuid" => $uuid
         ];
-        if (!$petPointSecretKey || !$petPointSecretId ) {
+        $customer = new Customer();
+        $customer->first_name = $first_name;
+        $customer->last_name = $last_name;
+        $customer->email = $email;
+        $customer->pet_points = $pet_points;
+        $customer->uuid = $uuid;
+        $customer->save();
+        if (!$petPointSecretKey || !$petPointSecretId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Missing required headers or data',
@@ -86,20 +93,22 @@ class PartnerController extends Controller
         // If all requests succeed, send a success response
         return response()->json([
             'success' => true,
+            'customer'=>$customer,
             'message' => 'Uploaded successfully',
         ], 200);
     }
 
-    public function checkCustomerPetPoints($id,$amount){
-        $customer= Customer::where('id',$id)->first();
-        if($customer){
-            $pet_point= $customer['pet_point'];
-            if($pet_point>=$amount){
+    public function checkCustomerPetPoints($id, $amount)
+    {
+        $customer = Customer::where('id', $id)->first();
+        if ($customer) {
+            $pet_point = $customer['pet_point'];
+            if ($pet_point >= $amount) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Able to Proceed',
                 ], 200);
-            }else{
+            } else {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unable to Proceed',
@@ -108,29 +117,31 @@ class PartnerController extends Controller
         }
     }
 
-    public function customerUsedPetPoints(Request $request){
-        $data= $request->data;
+    public function customerUsedPetPoints(Request $request)
+    {
+        $data = $request->data;
         return $data;
     }
 
-    public function loginUser(Request $request){
-        $email= $request->email;
-        $password= $request->password;
-        $user= User::where('email',$email)->first();
-        if($user){
+    public function loginUser(Request $request)
+    {
+        $email = $request->email;
+        $password = $request->password;
+        $user = User::where('email', $email)->first();
+        if ($user) {
             if (password_verify($password, $user->password)) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Login successfully',
-                    'data'=>$user
+                    'data' => $user
                 ], 200);
-            }else{
+            } else {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized',
                 ], 200);
             }
-        }else{
+        } else {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized',
@@ -138,16 +149,41 @@ class PartnerController extends Controller
         }
     }
 
-    public function getCustomer($id){
-            $customer= Customer::where('id',$id)->first();
-            if($customer){
-                return response()->json([
-                    'success' => true,
-                    'message' => 'data found',
-                    'data' => $customer
+    public function getCustomer($id)
+    {
+        $customer = Customer::where('id', $id)->first();
+        if ($customer) {
+            return response()->json([
+                'success' => true,
+                'message' => 'data found',
+                'data' => $customer
 
-                ], 200);
-            }
+            ], 200);
+        }
     }
 
+
+    public function createCustomer(Request $request)
+    {
+        $first_name = $request->first_name;
+        $last_name = $request->last_name;
+        $email = $request->email;
+        $pet_points = $request->pet_points;
+        $uuid = $request->uuid;
+        $customer = new Customer();
+        $customer->first_name = $first_name;
+        $customer->last_name = $last_name;
+        $customer->email = $email;
+        $customer->pet_points = $pet_points;
+        $customer->uuid = $uuid;
+        $customer->save();
+        if ($customer) {
+            return response()->json([
+                'success' => true,
+                'message' => 'data found',
+                'data' => $customer
+
+            ], 200);
+        }
+    }
 }
