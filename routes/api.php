@@ -9,4 +9,4 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 Route::post('/uploadUserPetPoints',[PartnerController::class,'uploadUserPetPoints']);
 // getCustomer
-Route::post('/getCustomer/{id}',[PartnerController::class,'getCustomer']);
+Route::get('/getCustomer/{id}',[PartnerController::class,'getCustomer']);
