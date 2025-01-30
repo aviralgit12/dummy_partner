@@ -11,6 +11,11 @@ class CustomerTransactionDetails extends Model
         "last_name",
         "email",
         "pet_point",
-        "uuid"
+        "uuid",
+        'transaction_data',
+    ];
+
+    protected $casts = [
+        'transaction_data' => 'array',
     ];
 }

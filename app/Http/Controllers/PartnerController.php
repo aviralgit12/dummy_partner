@@ -134,6 +134,7 @@ class PartnerController extends Controller
         $customer_transaction_details->email = $data['transaction_data']['email'];
         $customer_transaction_details->pet_point =$data['total_point_used'];
         $customer_transaction_details->uuid =  $data['transaction_data']['uuid'];
+        $customer_transaction_details->transaction_data=$data['transaction_data']['transaction_details'];
         $customer_transaction_details->save();
         $customer= Customer::where('uuid', $data['transaction_data']['uuid'])->first();
         $customer->pet_point=$customer->pet_point-$data['total_point_used'];
