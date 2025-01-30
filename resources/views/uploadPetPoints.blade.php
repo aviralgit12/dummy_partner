@@ -16,7 +16,7 @@
     <div class="container mx-auto px-4 py-8">
         <!-- Header with Create Button -->
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">SandBox Upload List</h1>
+            <h1 class="text-2xl font-bold">Customer Upload List</h1>
             <button onclick="openModal('create')"
                 class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                 Upload
@@ -25,7 +25,46 @@
 
         <!-- Users Table -->
         <div class="bg-white shadow-md rounded-lg overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden py-32">
+                <div class="flex flex-col items-center justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                    <p class="mt-4 text-gray-600">Loading uploads...</p>
+                </div>
+            </div>
+        
+            <!-- Error State -->
+            <div id="errorState" class="hidden py-32">
+                <div class="flex flex-col items-center justify-center">
+                    <svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <p id="errorMessage" class="mt-4 text-lg text-gray-800 font-medium">Something went wrong</p>
+                    <p id="errorDetails" class="mt-2 text-gray-600">Unable to fetch upload data</p>
+                    <button onclick="fetchUsers()" 
+                        class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        
+            <!-- No Data State -->
+            <div id="noDataState" class="hidden py-32">
+                <div class="flex flex-col items-center justify-center">
+                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="mt-4 text-lg text-gray-800 font-medium">No Uploads Found</p>
+                    <p class="mt-2 text-gray-600">Start by uploading new user data</p>
+                    <button onclick="openModal('create')" 
+                        class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Upload Now
+                    </button>
+                </div>
+            </div>
+        
+            <!-- Data Table -->
+            <table id="dataTable" class="hidden min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -129,6 +168,14 @@
         const MAIN_WEBSITE_URL = "{{ config('app.url') }}/api/referralLink";
         let isCreateMode = false;
 
+        function showState(state) {
+        const states = ['loadingState', 'errorState', 'noDataState', 'dataTable'];
+        states.forEach(s => {
+            document.getElementById(s).classList.add('hidden');
+        });
+        document.getElementById(state).classList.remove('hidden');
+    }
+
         // Dummy data for demonstration
         const dummyUsers = [{
                 id: 1,
@@ -149,6 +196,8 @@
         ];
 
         async function fetchUsers() {
+        showState('loadingState');
+        try {
             const token = "<?php echo (session('auth_token')); ?>";
             const response = await fetch('/api/getUploadSandBox', {
                 method: 'get',
@@ -157,10 +206,27 @@
                     'Authorization': 'Bearer ' + token,
                 },
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
-            console.log(data.data);
+            
+            if (!data.data || data.data.length === 0) {
+                showState('noDataState');
+                return;
+            }
+
+            showState('dataTable');
             displayUsers(data.data);
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('errorMessage').textContent = 'Error Loading Data';
+            document.getElementById('errorDetails').textContent = error.message || 'Unable to fetch upload data';
+            showState('errorState');
         }
+    }
 
         // Display users in table
         function displayUsers(users) {
@@ -237,8 +303,14 @@
 
         // Handle form submission
         document.getElementById('userForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        e.preventDefault();
 
+        const submitButton = document.getElementById('submitButton');
+        const originalText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Processing...';
+
+        try {
             const userData = {
                 first_name: document.getElementById('firstName').value,
                 last_name: document.getElementById('lastName').value,
@@ -246,55 +318,53 @@
                 pet_points: parseInt(document.getElementById('petPoints').value),
                 uuid: document.getElementById('uuid').value
             };
-            console.log(isCreateMode);
-            //handle create api
-            if (isCreateMode) {
-                // Handle Create
-                const token = "<?php echo (session('auth_token')); ?>";
-                const response = await fetch('/api/uploadUserPetPoints', {
-                    method: 'post',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token,
-                    },
-                    body: JSON.stringify(userData)
-                });
-                const data = await response.json();
-                console.log(data.data);
-                showNotification('User created successfully!');
-            } else {
-                // Handle Edit api
-                const userId = document.getElementById('uuid').value;
-                    const token = "<?php echo (session('auth_token')); ?>";
-                const response = await fetch(`/api/editCustomer/${userId}`, {
-                    method: 'post',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token,
-                    },
-                    body: JSON.stringify(userData)
-                });
-                const data = await response.json();
-                // console.log(data.data);
-                //     dummyUsers[userIndex] = {
-                //         ...dummyUsers[userIndex],
-                //         ...userData
-                //     };
-                    showNotification('User updated successfully!');
-                
+
+            const token = "<?php echo (session('auth_token')); ?>";
+            const endpoint = '/api/uploadUserPetPoints';
+            
+            const response = await fetch(endpoint, {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify(userData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to upload user data');
             }
 
+            const data = await response.json();
+            showNotification('Upload successful!', 'success');
             closeModal();
             fetchUsers();
-        });
-
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.textContent = message;
-            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg';
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification(error.message || 'An error occurred while uploading', 'error');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
         }
+    });
+
+    function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.className = `fixed top-4 right-4 px-6 py-3 rounded shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`;
+        
+        document.body.appendChild(notification);
+        
+        // Fade out animation
+        setTimeout(() => {
+            notification.style.transition = 'opacity 0.5s ease-in-out';
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
+    }
 
         // Shop now redirect function
         function redirectToShop(uuid) {
